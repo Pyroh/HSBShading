@@ -31,48 +31,59 @@ import CoreGraphics
 /// The evaluation function for hue shading.
 @usableFromInline func HueRampEvaluation(info: UnsafeMutableRawPointer?,
                                          in progress: UnsafePointer<CGFloat>,
-                                         out: UnsafeMutablePointer<CGFloat>) -> Void {
+                                         out: UnsafeMutablePointer<CGFloat>) {
     
     guard
-        let comps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque(_:))?.takeUnretainedValue()
+        let unmanagedComps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque)
     else { fatalError("Cannot retrieve info data.") }
     
+    let comps = unmanagedComps.takeUnretainedValue()
     let rgb = hsbToRgb(hue: progress.pointee, sat: comps.c1, bri: comps.c2)
     
-    out[0] = rgb.r
-    out[1] = rgb.g
-    out[2] = rgb.b
-    out[3] = comps.aa
+    withUnsafePointer(to: rgb) {
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
+            out.assign(from: $0, count: 3)
+            out[3] = comps.aa
+        }
+    }
+    
 }
 
 /// The evaluation function for saturation shading.
 @usableFromInline func SatRampEvaluation(info: UnsafeMutableRawPointer?,
                                          in progress: UnsafePointer<CGFloat>,
-                                         out: UnsafeMutablePointer<CGFloat>) -> Void {
+                                         out: UnsafeMutablePointer<CGFloat>) {
     guard
-        let comps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque(_:))?.takeUnretainedValue()
+        let unmanagedComps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque)
     else { fatalError("Cannot retrieve info data.") }
     
+    let comps = unmanagedComps.takeUnretainedValue()
     let rgb = hsbToRgb(hue: comps.c1, sat: progress.pointee, bri: comps.c2)
     
-    out[0] = rgb.r
-    out[1] = rgb.g
-    out[2] = rgb.b
-    out[3] = comps.aa
+    withUnsafePointer(to: rgb) {
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
+            out.assign(from: $0, count: 3)
+            out[3] = comps.aa
+        }
+    }
+    
 }
 
 /// The evaluation function for brightness shading.
 @usableFromInline func BriRampEvaluation(info: UnsafeMutableRawPointer?,
                                          in progress: UnsafePointer<CGFloat>,
-                                         out: UnsafeMutablePointer<CGFloat>) -> Void {
+                                         out: UnsafeMutablePointer<CGFloat>) {
     guard
-        let comps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque(_:))?.takeUnretainedValue()
+        let unmanagedComps = UnsafeRawPointer(info).map(Unmanaged<ConstantComponents>.fromOpaque)
     else { fatalError("Cannot retrieve info data.") }
     
+    let comps = unmanagedComps.takeUnretainedValue()
     let rgb = hsbToRgb(hue: comps.c1, sat: comps.c2, bri: progress.pointee)
     
-    out[0] = rgb.r
-    out[1] = rgb.g
-    out[2] = rgb.b
-    out[3] = comps.aa
+    withUnsafePointer(to: rgb) {
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
+            out.assign(from: $0, count: 3)
+            out[3] = comps.aa
+        }
+    }
 }

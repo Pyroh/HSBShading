@@ -33,8 +33,15 @@ import Foundation
     return Swift.min(Swift.max(x, min), max)
 }
 
+/// `CGFunctionReleaseInfoCallback` used to release the info object passed as argument to a CGFunction.
+@usableFromInline func infoReleaseCallback(_ ptr: UnsafeMutableRawPointer?) {
+    UnsafeRawPointer(ptr)
+        .map(Unmanaged<AnyObject>.fromOpaque)?
+        .release()
+}
+
 /// Converts HSB values to RGB.
-/// - Note: Shamelessly stolen from http://tamivox.org/darlene/rgb_hsb/index.html
+/// - Note: Borrowed from http://tamivox.org/darlene/rgb_hsb/index.html
 @usableFromInline func hsbToRgb(hue: CGFloat, sat: CGFloat, bri: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
     guard sat > 0 else { return (bri, bri, bri) }
     let hue = hue < 1 ? hue : 0
@@ -44,17 +51,17 @@ import Foundation
     let mul = hue * 6
     
     switch mul {
-    case 0: return (bri, dim, dim)
-    case ..<1: return (bri, dim + pro * mul, dim)
-    case 1: return (bri, bri, dim)
-    case ..<2: return (dim + pro * (2 - mul), bri, dim)
-    case 2: return (dim, bri, dim)
-    case ..<3: return (dim, bri, dim + pro * (mul - 2))
-    case 3: return (dim, bri, bri)
-    case ..<4: return (dim, dim + pro * (4 - mul), bri)
-    case 4: return (dim, dim, bri)
-    case ..<5: return (dim + pro * (mul - 4), dim, bri)
-    case 5: return (bri, dim, bri)
-    default: return (bri, dim, dim + pro * (6 - mul))
+    case 0: return (bri, dim, dim) // I
+    case ..<1: return (bri, dim + pro * mul, dim) // II
+    case 1: return (bri, bri, dim) // III
+    case ..<2: return (dim + pro * (2 - mul), bri, dim) // IV
+    case 2: return (dim, bri, dim) // V
+    case ..<3: return (dim, bri, dim + pro * (mul - 2)) // VI
+    case 3: return (dim, bri, bri) // VII
+    case ..<4: return (dim, dim + pro * (4 - mul), bri) // VIII
+    case 4: return (dim, dim, bri) // IX
+    case ..<5: return (dim + pro * (mul - 4), dim, bri) // X
+    case 5: return (bri, dim, bri) // XI
+    default: return (bri, dim, dim + pro * (6 - mul)) // XII
     }
 }

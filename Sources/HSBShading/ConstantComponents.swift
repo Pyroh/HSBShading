@@ -28,6 +28,7 @@
 
 import CoreGraphics
 
+/// Info object passed to the `CGShading` evaluation function.
 @usableFromInline class ConstantComponents {
     let c1: CGFloat
     let c2: CGFloat

@@ -29,6 +29,8 @@
 import CoreGraphics
 
 public enum HSBShading {
+    // MARK: Hue shading -
+    
     /// Draws a hue axial shading.
     /// - Parameters:
     ///   - ctx: The `CGContext` to draw the shading to.
@@ -36,7 +38,7 @@ public enum HSBShading {
     ///   - start: The starting point of the axis, in the shading's target coordinate space.
     ///   - end: The ending point of the axis, in the shading's target coordinate space.
     ///   - saturation: The saturaton component to use for the shading.
-    ///   - brigthness: The brightness component to use for the shading.
+    ///   - brightness: The brightness component to use for the shading.
     ///   - alpha: The alpha component to use for the shading.
     ///   - hueRange: The range in which interpolate the shading's hue component.
     ///   - extendStart: Specifies whether to extend the shading beyond the starting point of the axis.
@@ -46,7 +48,7 @@ public enum HSBShading {
                                            start: CGPoint, end: CGPoint,
                                            saturation: CGFloat = 1.0, brightness: CGFloat = 1.0,
                                            alpha: CGFloat = 1.0, hueRange: ClosedRange<CGFloat> = 0...1,
-                                           extendStart: Bool = true, extendEnd: Bool = true) {
+                                           extendStart: Bool = false, extendEnd: Bool = false) {
         assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let saturation = clamp(saturation, 0, 1)
         let brightness = clamp(brightness, 0, 1)
@@ -56,90 +58,14 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: saturation, c2: brightness, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(axialSpace: colorSpace, start: start, end: end, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { return assertionFailure("Unable to draw the shading.") }
         
         ctx.drawShading(shading)
     }
-
-    /// Draws a saturation axial shading.
-    /// - Parameters:
-    ///   - ctx: The `CGContext` to draw the shading to.
-    ///   - colorSpace: The color space in which color values are expressed.
-    ///   - start: The starting point of the axis, in the shading's target coordinate space.
-    ///   - end: The ending point of the axis, in the shading's target coordinate space.
-    ///   - hue: The hue component to use for the shading.
-    ///   - brightness: The brightness component to use for the shading.
-    ///   - alpha: The alpha component to use for the shading.
-    ///   - saturationRange: The range in which interpolate the shading's saturation component.
-    ///   - extendStart: Specifies whether to extend the shading beyond the starting point of the axis.
-    ///   - extendEnd: Specifies whether to extend the shading beyond the ending point of the axis.
-    @inlinable
-    public static func drawAxialSaturationShading(to ctx: CGContext, colorSpace: CGColorSpace,
-                                                  start: CGPoint, end: CGPoint,
-                                                  hue: CGFloat = 1.0, brightness: CGFloat = 1.0,
-                                                  alpha: CGFloat = 1.0, saturationRange: ClosedRange<CGFloat> = 0...1,
-                                                  extendStart: Bool = true, extendEnd: Bool = true) {
-        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
-        let hue = clamp(hue, 0, 1)
-        let brightness = clamp(brightness, 0, 1)
-        let alpha = clamp(alpha, 0, 1)
-        let saturationRange = saturationRange.clamped(to: 0...1)
-        let domain = [saturationRange.lowerBound, saturationRange.upperBound]
-        
-        let comps = ConstantComponents(c1: hue, c2: brightness, aa: alpha)
-        let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
-        
-        guard
-            let f = HSBShading.createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
-            let shading = CGShading(axialSpace: colorSpace, start: start, end: end, function: f, extendStart: extendStart, extendEnd: extendEnd)
-        else { return assertionFailure("Unable to draw the shading.") }
-        
-        ctx.drawShading(shading)
-    }
-    
-    /// Draws a brightness axial shading.
-    /// - Parameters:
-    ///   - ctx: The `CGContext` to draw the shading to.
-    ///   - colorSpace: The color space in which color values are expressed.
-    ///   - start: The starting point of the axis, in the shading's target coordinate space.
-    ///   - end: The ending point of the axis, in the shading's target coordinate space.
-    ///   - hue: The hue component to use for the shading.
-    ///   - saturation: The saturation component to use for the shading.
-    ///   - alpha: The alpha component to use for the shading.
-    ///   - brightnessRange: The range in which interpolate the shading's brightness component.
-    ///   - extendStart: Specifies whether to extend the shading beyond the starting point of the axis.
-    ///   - extendEnd: Specifies whether to extend the shading beyond the ending point of the axis.
-    @inlinable
-    public static func drawAxialBrightnessShading(to ctx: CGContext, colorSpace: CGColorSpace,
-                                                  start: CGPoint, end: CGPoint,
-                                                  hue: CGFloat = 1.0, saturation: CGFloat = 1.0,
-                                                  alpha: CGFloat = 1.0, brightnessRange: ClosedRange<CGFloat> = 0...1,
-                                                  extendStart: Bool = true, extendEnd: Bool = true) {
-        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
-        let hue = clamp(hue, 0, 1)
-        let saturation = clamp(saturation, 0, 1)
-        let alpha = clamp(alpha, 0, 1)
-        let brightnessRange = brightnessRange.clamped(to: 0...1)
-        let domain = [brightnessRange.lowerBound, brightnessRange.upperBound]
-        
-        let comps = ConstantComponents(c1: hue, c2: saturation, aa: alpha)
-        let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
-        
-        guard
-            let f = HSBShading.createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
-            let shading = CGShading(axialSpace: colorSpace, start: start, end: end, function: f, extendStart: extendStart, extendEnd: extendEnd)
-        else { return assertionFailure("Unable to draw the shading.") }
-        
-        ctx.drawShading(shading)
-    }
-    
     
     /// Draws a radial hue shading.
     /// - Parameters:
@@ -162,6 +88,7 @@ public enum HSBShading {
                                             saturation: CGFloat = 1.0, brightness: CGFloat = 1.0,
                                             alpha: CGFloat = 1.0, hueRange: ClosedRange<CGFloat> = 0...1,
                                             extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let saturation = clamp(saturation, 0, 1)
         let brightness = clamp(brightness, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -170,10 +97,9 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: saturation, c2: brightness, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: start, startRadius: startRadius, end: end, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unkown error") }
         
@@ -181,7 +107,7 @@ public enum HSBShading {
     }
     
     
-    /// Draws a radial hue shading.
+    /// Draws a concentric radial hue shading.
     /// - Parameters:
     ///   - ctx: The `CGContext` to draw the shading to.
     ///   - colorSpace: The color space in which color values are expressed.
@@ -200,6 +126,7 @@ public enum HSBShading {
                                             saturation: CGFloat = 1.0, brightness: CGFloat = 1.0,
                                             alpha: CGFloat = 1.0, hueRange: ClosedRange<CGFloat> = 0...1,
                                             extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let saturation = clamp(saturation, 0, 1)
         let brightness = clamp(brightness, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -208,16 +135,52 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: saturation, c2: brightness, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(HueRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: center, startRadius: startRadius, end: center, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unkown error") }
         
         ctx.drawShading(shading)
     }
     
+    // MARK: Saturation shading -
+
+    /// Draws a saturation axial shading.
+    /// - Parameters:
+    ///   - ctx: The `CGContext` to draw the shading to.
+    ///   - colorSpace: The color space in which color values are expressed.
+    ///   - start: The starting point of the axis, in the shading's target coordinate space.
+    ///   - end: The ending point of the axis, in the shading's target coordinate space.
+    ///   - hue: The hue component to use for the shading.
+    ///   - brightness: The brightness component to use for the shading.
+    ///   - alpha: The alpha component to use for the shading.
+    ///   - saturationRange: The range in which interpolate the shading's saturation component.
+    ///   - extendStart: Specifies whether to extend the shading beyond the starting point of the axis.
+    ///   - extendEnd: Specifies whether to extend the shading beyond the ending point of the axis.
+    @inlinable
+    public static func drawAxialSaturationShading(to ctx: CGContext, colorSpace: CGColorSpace,
+                                                  start: CGPoint, end: CGPoint,
+                                                  hue: CGFloat = 1.0, brightness: CGFloat = 1.0,
+                                                  alpha: CGFloat = 1.0, saturationRange: ClosedRange<CGFloat> = 0...1,
+                                                  extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
+        let hue = clamp(hue, 0, 1)
+        let brightness = clamp(brightness, 0, 1)
+        let alpha = clamp(alpha, 0, 1)
+        let saturationRange = saturationRange.clamped(to: 0...1)
+        let domain = [saturationRange.lowerBound, saturationRange.upperBound]
+        
+        let comps = ConstantComponents(c1: hue, c2: brightness, aa: alpha)
+        let unmanagedComps = Unmanaged.passRetained(comps)
+        
+        guard
+            let f = createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let shading = CGShading(axialSpace: colorSpace, start: start, end: end, function: f, extendStart: extendStart, extendEnd: extendEnd)
+        else { fatalError("Unknown error") }
+        
+        ctx.drawShading(shading)
+    }
     
     /// Draws a radial saturation shading.
     /// - Parameters:
@@ -240,6 +203,7 @@ public enum HSBShading {
                                                    hue: CGFloat = 1.0, brightness: CGFloat = 1.0,
                                                    alpha: CGFloat = 1.0, saturationRange: ClosedRange<CGFloat> = 0...1,
                                                    extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let hue = clamp(hue, 0, 1)
         let brightness = clamp(brightness, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -248,17 +212,16 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: hue, c2: brightness, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: start, startRadius: startRadius, end: end, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unknown error") }
         
         ctx.drawShading(shading)
     }
     
-    /// Draws a radial saturation shading.
+    /// Draws a concentric radial saturation shading.
     /// - Parameters:
     ///   - ctx: The `CGContext` to draw the shading to.
     ///   - colorSpace: The color space in which color values are expressed.
@@ -277,6 +240,7 @@ public enum HSBShading {
                                                    hue: CGFloat = 1.0, brightness: CGFloat = 1.0,
                                                    alpha: CGFloat = 1.0, saturationRange: ClosedRange<CGFloat> = 0...1,
                                                    extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let hue = clamp(hue, 0, 1)
         let brightness = clamp(brightness, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -285,16 +249,53 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: hue, c2: brightness, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(SatRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: center, startRadius: startRadius, end: center, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unknown error") }
         
         ctx.drawShading(shading)
     }
     
+    // MARK: Brightness shading -
+    
+    /// Draws a brightness axial shading.
+    /// - Parameters:
+    ///   - ctx: The `CGContext` to draw the shading to.
+    ///   - colorSpace: The color space in which color values are expressed.
+    ///   - start: The starting point of the axis, in the shading's target coordinate space.
+    ///   - end: The ending point of the axis, in the shading's target coordinate space.
+    ///   - hue: The hue component to use for the shading.
+    ///   - saturation: The saturation component to use for the shading.
+    ///   - alpha: The alpha component to use for the shading.
+    ///   - brightnessRange: The range in which interpolate the shading's brightness component.
+    ///   - extendStart: Specifies whether to extend the shading beyond the starting point of the axis.
+    ///   - extendEnd: Specifies whether to extend the shading beyond the ending point of the axis.
+    @inlinable
+    public static func drawAxialBrightnessShading(to ctx: CGContext, colorSpace: CGColorSpace,
+                                                  start: CGPoint, end: CGPoint,
+                                                  hue: CGFloat = 1.0, saturation: CGFloat = 1.0,
+                                                  alpha: CGFloat = 1.0, brightnessRange: ClosedRange<CGFloat> = 0...1,
+                                                  extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
+        let hue = clamp(hue, 0, 1)
+        let saturation = clamp(saturation, 0, 1)
+        let alpha = clamp(alpha, 0, 1)
+        let brightnessRange = brightnessRange.clamped(to: 0...1)
+        let domain = [brightnessRange.lowerBound, brightnessRange.upperBound]
+        
+        let comps = ConstantComponents(c1: hue, c2: saturation, aa: alpha)
+        let unmanagedComps = Unmanaged.passRetained(comps)
+        
+        guard
+            let f = createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let shading = CGShading(axialSpace: colorSpace, start: start, end: end, function: f, extendStart: extendStart, extendEnd: extendEnd)
+        else { fatalError("Unknown error") }
+        
+        ctx.drawShading(shading)
+    }
+    
     /// Draws a radial brightness shading.
     /// - Parameters:
     ///   - ctx: The `CGContext` to draw the shading to.
@@ -316,6 +317,7 @@ public enum HSBShading {
                                                    hue: CGFloat = 1.0, saturation: CGFloat = 1.0,
                                                    alpha: CGFloat = 1.0, brightnessRange: ClosedRange<CGFloat> = 0...1,
                                                    extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let hue = clamp(hue, 0, 1)
         let saturation = clamp(saturation, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -324,17 +326,16 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: hue, c2: saturation, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: start, startRadius: startRadius, end: end, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unknown error") }
         
         ctx.drawShading(shading)
     }
     
-    /// Draws a radial brightness shading.
+    /// Draws a concentric radial brightness shading.
     /// - Parameters:
     ///   - ctx: The `CGContext` to draw the shading to.
     ///   - colorSpace: The color space in which color values are expressed.
@@ -353,6 +354,7 @@ public enum HSBShading {
                                                    hue: CGFloat = 1.0, saturation: CGFloat = 1.0,
                                                    alpha: CGFloat = 1.0, brightnessRange: ClosedRange<CGFloat> = 0...1,
                                                    extendStart: Bool = false, extendEnd: Bool = false) {
+        assert(colorSpace.model == .rgb, "The color space model must be RGB.")
         let hue = clamp(hue, 0, 1)
         let saturation = clamp(saturation, 0, 1)
         let alpha = clamp(alpha, 0, 1)
@@ -361,10 +363,9 @@ public enum HSBShading {
         
         let comps = ConstantComponents(c1: hue, c2: saturation, aa: alpha)
         let unmanagedComps = Unmanaged.passRetained(comps)
-        defer { unmanagedComps.release() }
         
         guard
-            let f = HSBShading.createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
+            let f = createFunctionFor(BriRampEvaluation, with: unmanagedComps.toOpaque(), domain: domain),
             let shading = CGShading(radialSpace: colorSpace, start: center, startRadius: startRadius, end: center, endRadius: endRadius, function: f, extendStart: extendStart, extendEnd: extendEnd)
         else { fatalError("Unknown error") }
         
@@ -378,10 +379,10 @@ public enum HSBShading {
     /// - Returns: The resulting `CGFunction`.
     @usableFromInline
     static func createFunctionFor(_ callback: @escaping CGFunctionEvaluateCallback,
-                                  with comps: UnsafeMutableRawPointer,
-                                  domain: [CGFloat] = [0, 1]) -> CGFunction? {
-        withUnsafePointer(to: CGFunctionCallbacks(version: 0, evaluate: callback, releaseInfo: nil)) {
-            CGFunction(info: comps,
+                                  with info: UnsafeMutableRawPointer,
+                                  domain: [CGFloat]) -> CGFunction? {
+        withUnsafePointer(to: CGFunctionCallbacks(version: 0, evaluate: callback, releaseInfo: infoReleaseCallback)) {
+            CGFunction(info: info,
                        domainDimension: 1, domain: domain,
                        rangeDimension: 4, range: [0, 1, 0, 1, 0, 1, 0, 1],
                        callbacks: $0)
