@@ -27,6 +27,10 @@
 //
 
 import Foundation
+import simd
+
+import SwizzleIMD
+import SmoothOperators
 
 /// Clamps the given value to range `min...max`.
 @usableFromInline func clamp(_ x: CGFloat, _ min: CGFloat, _ max: CGFloat) -> CGFloat {
@@ -40,28 +44,16 @@ import Foundation
         .release()
 }
 
-/// Converts HSB values to RGB.
-/// - Note: Borrowed from http://tamivox.org/darlene/rgb_hsb/index.html
-@usableFromInline func hsbToRgb(hue: CGFloat, sat: CGFloat, bri: CGFloat) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
-    guard sat > 0 else { return (bri, bri, bri) }
-    let hue = hue < 1 ? hue : 0
+/// Converts HSV values to RGB.
+/// - Note: Borrowed from [https://github.com/hughsk/glsl-hsv2rgb](https://github.com/hughsk/glsl-hsv2rgb)
+@usableFromInline func hsbToRgb(hue: Double, sat: Double, bri: Double) -> SIMD4<Double> {
+    hsbToRgb(.init(hue, sat, bri))
+}
+
+@usableFromInline func hsbToRgb(_ c: SIMD3<Double>) -> SIMD4<Double> {
+    let K = SIMD4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0)
+    let p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www)
+    let o = c.z * mix(K.xxx, clamp(p - K.xxx, min: 0.0, max: 1.0), t: c.y)
     
-    let pro = bri * sat
-    let dim = bri - pro
-    let mul = hue * 6
-    
-    switch mul {
-    case 0: return (bri, dim, dim) // I
-    case ..<1: return (bri, dim + pro * mul, dim) // II
-    case 1: return (bri, bri, dim) // III
-    case ..<2: return (dim + pro * (2 - mul), bri, dim) // IV
-    case 2: return (dim, bri, dim) // V
-    case ..<3: return (dim, bri, dim + pro * (mul - 2)) // VI
-    case 3: return (dim, bri, bri) // VII
-    case ..<4: return (dim, dim + pro * (4 - mul), bri) // VIII
-    case 4: return (dim, dim, bri) // IX
-    case ..<5: return (dim + pro * (mul - 4), dim, bri) // X
-    case 5: return (bri, dim, bri) // XI
-    default: return (bri, dim, dim + pro * (6 - mul)) // XII
-    }
+    return .init(o, 1.0)
 }

@@ -41,9 +41,8 @@ import CoreGraphics
     let rgb = hsbToRgb(hue: progress.pointee, sat: comps.c1, bri: comps.c2)
     
     withUnsafePointer(to: rgb) {
-        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
-            out.assign(from: $0, count: 3)
-            out[3] = comps.aa
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 4) {
+            out.assign(from: $0, count: 4)
         }
     }
     
@@ -61,12 +60,10 @@ import CoreGraphics
     let rgb = hsbToRgb(hue: comps.c1, sat: progress.pointee, bri: comps.c2)
     
     withUnsafePointer(to: rgb) {
-        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
-            out.assign(from: $0, count: 3)
-            out[3] = comps.aa
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 4) {
+            out.assign(from: $0, count: 4)
         }
     }
-    
 }
 
 /// The evaluation function for brightness shading.
@@ -81,9 +78,8 @@ import CoreGraphics
     let rgb = hsbToRgb(hue: comps.c1, sat: comps.c2, bri: progress.pointee)
     
     withUnsafePointer(to: rgb) {
-        $0.withMemoryRebound(to: CGFloat.self, capacity: 3) {
-            out.assign(from: $0, count: 3)
-            out[3] = comps.aa
+        $0.withMemoryRebound(to: CGFloat.self, capacity: 4) {
+            out.assign(from: $0, count: 4)
         }
     }
 }
